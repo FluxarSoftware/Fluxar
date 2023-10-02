@@ -8,9 +8,9 @@
 
 # Setup
 
-<p style="position: relative; bottom: 4px; font-size: 17px;">Whatever programming language you will download, you should setup it.</p>
-
+Whatever programming language you will download, you should setup it.<br/>
 So, how to do it properly?
+<hr/>
 
 1. Download installer from the official site.
 2. Open it, and start installing CortexScript.
@@ -25,17 +25,10 @@ So, how to do it properly?
 
 ## Documentation
 
-In the **documentation** you can find about:
+In the **documentation** you can find everything you need!
 
-1. Variables
-2. Strings
-3. Functions
-    - Regular Functions
-    - Built-In Functions
-4. Classes
-5. Tables
+You don't know how to use Tables or how to use Built-In function for it?<br/>
+Find Built-In function Read description and understand how to use it.
 
-And More!
-
-Using `cortex help` command in the cmd or terminal, you will see every single command that you can use with CortexScript.
+> Using `cortex help` command in the cmd or terminal, you will see every single command that you can use with CortexScript.
 <p style="position: relative; bottom: 11px; font-size: 16px;">You can read everything about CortexScript in the <a href="https://www.youtube.com/channel/UCKC79i28LRiqy2jVnsimNDw">docs</a>.</p>
