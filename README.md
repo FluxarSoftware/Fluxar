@@ -23,16 +23,19 @@ So, how to do it properly?
 > [!NOTE]
 > If you have any errors or problem with setting up, try to reinstalling CortexScript or running `cmd` as Administrator.
 
-## CMD Commands
+## Documentation
+
+In the **documentation** you can find about:
+
+1. Variables
+2. Strings
+3. Functions
+    - Regular Functions
+    - Built-In Functions
+4. Classes
+5. Tables
+
+And More!
 
 Using `cortex help` command in the cmd or terminal, you will see every single command that you can use with CortexScript.
-
-Basic Commands:
-
-* Setup - Automatically set ups CortexScript to fit your computer. Usage: `cortex setup`, First time using it - `.\cortex setup`
-* Run - Runs .cors files. Usage: `cortex run <script>`
-
-## Built-In Functions
-
-<p style="position: relative; bottom: 4px; font-size: 21px;">A lot of <b>Built-In</b> Functions was added into the CortexScript.</p>
-<p style="position: relative; bottom: 21px; font-size: 16px;">You can read about Built-In Functions more in the <a href="https://www.youtube.com/channel/UCKC79i28LRiqy2jVnsimNDw">docs</a>.</p>
+<p style="position: relative; bottom: 11px; font-size: 16px;">You can read everything about CortexScript in the <a href="https://www.youtube.com/channel/UCKC79i28LRiqy2jVnsimNDw">docs</a>.</p>
