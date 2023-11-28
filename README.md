@@ -1,9 +1,9 @@
 <html>
     <div align="center">
-        <a href=""><img src="dist/icons/github_thumbnail.png" alt="CortexScript" height="217" /></a>
+        <a href=""><img src="dist/icons/github_thumbnail.png" alt="Quantum" height="217" /></a>
     </div>
     <hr/>
-    <p align="center" style="font-size: 20px;"><b>CortexScript</b> is a new programming language for making everything you want!</p>
+    <p align="center" style="font-size: 20px;"><b>Quantum</b> is a new programming language for making everything you want!</p>
 </html>
 <div>&nbsp;</div>
 
