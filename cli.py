@@ -4,15 +4,15 @@ import pathlib
 
 def main():
     help = """
-    Usage: cortex <command> <any>
+    Usage: quantum <command> <any>
     Commands:
-        setup: Automatically set ups CortexScript to fit your computer.
-        run: Runs .cors files.
-        build: Build a CortexScript executable.
+        setup: Automatically set ups Quantum to fit your computer.
+        run: Runs .qu files.
+        build: Build a Quantum executable.
     """
     hint = "Use help command to see all commands."
     if len(sys.argv) < 2:
-        print(f"\n  CortexScript. {hint}")
+        print(f"\n  Quantum. {hint}")
         sys.exit(1)
     command = sys.argv[1]
     if command == 'help':
@@ -20,7 +20,7 @@ def main():
         sys.exit(1)
     elif command == 'run':
         if len(sys.argv) < 3:
-            print("\n   Usage: cortex run <script>")
+            print("\n   Usage: quantum run <script>")
             sys.exit(1)
         script_file = sys.argv[2]
         result, error = basic.run('<stdin>', f'cors_run("{script_file}")')
@@ -38,7 +38,7 @@ def main():
         subprocess.run([f"{path}"], shell=True)
     elif command == 'build':
         if len(sys.argv) < 3:
-            print("\n   Usage: cortex build <script>")
+            print("\n   Usage: quantum build <script>")
             sys.exit(1)
         script_name = sys.argv[2]
         subprocess.run(["build.exe", script_name])
