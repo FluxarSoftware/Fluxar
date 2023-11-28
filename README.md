@@ -5,6 +5,7 @@
     <hr/>
     <p align="center" style="font-size: 20px;"><b>CortexScript</b> is a new programming language for making everything you want!</p>
 </html>
+<div>&nbsp;</div>
 
 # Setup
 
