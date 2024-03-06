@@ -1,31 +1,40 @@
 @echo off
 
-    setlocal enableextensions disabledelayedexpansion
+setlocal enableextensions disabledelayedexpansion
 
-    for /l %%f in (0 1 100) do (
-        call :drawProgressBar %%f "Setting up the PATH..."
-    )
-    for /l %%f in (100 -1 0) do (
-        call :drawProgressBar %%f "Changing the Environment Variables..."
-    )
-    for /l %%f in (0 5 100) do (
-        call :drawProgressBar !random! "Updating..."
-    )
+for /l %%f in (0 1 100) do (
+    call :drawProgressBar %%f "- Setting up the PATH..."
+)
+for /l %%f in (0 1 50) do (
+    call :drawProgressBar %%f "- Changing the Environment Variables..."
+)
+for /l %%f in (50 1 100) do (
+    call :drawProgressBar %%f "- Setting up the Registery Keys..."
+)
+for /l %%f in (0 1 100) do (
+    call :drawProgressBar %%f "- Working on creating File Extension..."
+)
+for /l %%f in (0 1 100) do (
+    call :drawProgressBar !random! "- Updating..."
+)
 
-    rem Clean all after use
-    call :finalizeProgressBar 1
+rem Clean all after use
+call :finalizeProgressBar 1
 
-    call :initProgressBar "|" " "
-    call :drawProgressBar 0 "Finishing..."
-    for /l %%f in (0 1 100) do (
-        call :drawProgressBar %%f
-    )
-    set "CortexScriptPath=%~dp0"
-    setx PATH "%PATH%;%CortexScriptPath%" /M
-    cd /d "%CortexScriptPath%"
+call :initProgressBar "|" " "
+call :drawProgressBar 0 "- Finishing..."
+for /l %%f in (0 1 100) do (
+    call :drawProgressBar %%f
+)
+for %%I in ("%~dp0..\..") do set "FluxarPath=%%~fI"
+setx PATH "%FluxarPath%;%PATH%" /m >NUL
 
-    echo CortexScript was successfully added to the System Path.
-    endlocal
+if %errorlevel% neq 0 (
+    echo Fluxar - Fluxar was not successfully installed. Try to run CMD as Administrator.
+) else (
+    echo Fluxar - Fluxar was successfully installed to your PC.
+)
+endlocal
 
 :drawProgressBar value [text]
     if "%~1"=="" goto :eof
