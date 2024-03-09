@@ -1,0 +1,25 @@
+{
+  "name": "cors",
+  "displayName": "CortexScript",
+  "description": "New modern programming language",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "cors",
+      "aliases": ["CortexScript", "cors"],
+      "extensions": [".cors"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "cors",
+      "scopeName": "source.cors",
+      "path": "./syntaxes/cors.tmLanguage.json"
+    }]
+  }
+}
