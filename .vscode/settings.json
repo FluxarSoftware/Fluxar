@@ -1,0 +1,10 @@
+{
+ "files.associations": {
+  "pythread.h": "c",
+  "windows.h": "c",
+  "python.h": "c",
+  "enumobject.h": "c",
+  "tupleobject.h": "c",
+  "picklebufobject.h": "c"
+ }
+}

@@ -18,8 +18,11 @@ void printProgressBar(int progress, const char *message) {
     int barWidth = 45;
     int pos = barWidth * progress / 100;
 
-    if (IsAdmin()) {
-      printf("");
+    if (!IsAdmin()) {
+        printf("    Error: This program must be run with administrative privileges.\n");
+        exit(1);
+    } else {
+      printf(""); // I did it here because somehow it makes colors in cmd with it. do not delete, it will break everything.
     }
     printf(ANSI_COLOR_GREEN "    [");
     for (int i = 0; i < barWidth; ++i) {
@@ -27,6 +30,17 @@ void printProgressBar(int progress, const char *message) {
     }
     printf(ANSI_COLOR_GREEN "] %d%% %s" ANSI_COLOR_RESET "\r", progress, message);
     fflush(stdout);
+}
+void restartComputer() {
+    printf("\nDo you want to restart your computer? (Y/N): ");
+    char response;
+    scanf(" %c", &response);
+    if (response == 'Y' || response == 'y') {
+        printf("Restarting computer...\n");
+        system("shutdown /r /t 0");
+    } else {
+        printf("You chose not to restart your computer. Setup is successfully completed.\n");
+    }
 }
 int main() {
     struct Task {
@@ -54,12 +68,12 @@ int main() {
 
         for (int progress = startProgress; progress <= endProgress; progress++) {
             printProgressBar(progress, message);
-            (i == numTasks - 1) ? Sleep(15) : Sleep(50);
+            (i == numTasks - 1) ? Sleep(15) : Sleep(30);
         }
         if (taskFunction != NULL) {
             taskFunction();
         }
     }
-    printf("\n    Fluxar - Setup is successfully finished.");
+    restartComputer();
     return 0;
 }

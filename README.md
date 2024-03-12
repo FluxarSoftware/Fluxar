@@ -2,16 +2,10 @@
     <div align="center">
         <a href=""><img src="dist/img/github_thumbnail.png" alt="Fluxar" height="217" /></a>
     </div>
-    <hr/>
-    <p align="center" style="font-size: 20px;"><b>Fluxar</b> is a new programming language for making everything you want!</p>
 </html>
 <div>&nbsp;</div>
 
-# Setup
-
-<h3>Whatever programming language you will download, you should setup it.</h3>
-
-So, how to do it **properly**?
+# Installation and Setting up
 
 1. Download installer from the official site.
 2. Open it, and start installing Fluxar.

@@ -1,5 +1,5 @@
 import os, sys, subprocess
-import dist.src.basic as basic
+import dist.src.lang.basic as b
 import pathlib, shutil
 
 name = "Fluxar"
@@ -16,7 +16,7 @@ def main():
     """
     hint = "Use help command to see all commands."
     if len(sys.argv) < 2:
-        print(f"\n  {name}. {hint}")
+        print(f"\n{name}. {hint}")
         sys.exit(1)
     command = sys.argv[1]
     if command == 'help':
@@ -24,10 +24,10 @@ def main():
         sys.exit(1)
     elif command == 'run':
         if len(sys.argv) < 3:
-            print(f"\n   Usage: {cmd_class} run <script>")
+            print(f"   Usage: {cmd_class} run <script>")
             sys.exit(1)
         script_file = sys.argv[2]
-        result, error = basic.run('<stdin>', f'cors_run("{script_file}")')
+        result, error = b.run('<stdin>', f'cors_run("{script_file}")')
 
         if error:
             print(error.as_string())
@@ -38,24 +38,20 @@ def main():
     elif command == 'setup':
         try:
             dir_path = pathlib.Path().resolve()
-            path = rf"{dir_path}..\..\dist\shell\setup.bat"
+            path = rf"{dir_path}\dist\src\cmd\setx.exe"
             subprocess.run([f"{path}"], shell=True)
-
-            restart = input(f"\n{name} - Do you want to restart the computer? (y/n): ").strip().lower()
-            if restart == 'y':
-                subprocess.run(['shutdown', '/r', '/t', '0'])
         except Exception as e:
-            sys.stderr.write("\nFluxar - Error setting up Fluxar: {}\n".format(e))
+            sys.stderr.write("\nError setting up Fluxar: {}\n".format(e))
     elif command == 'init':
-        template_dir = "../project_template"
+        template_dir = "./init_template"
 
         project_name = input('Enter the project name: ')
         project_dir = os.path.join(os.getcwd(), project_name)
         try:
             shutil.copytree(template_dir, project_dir)
-            print(f"Fluxar - Initialized project '{project_name}' successfully.")
+            print(f"Initialized project '{project_name}' successfully.")
         except Exception as e:
-            print(f"Fluxar - Error initializing project: {e}")
+            print(f"Error initializing project: {e}")
     elif command == 'build':
         if len(sys.argv) < 3:
             print(f"\n   Usage: {cmd_class} build <script>")
