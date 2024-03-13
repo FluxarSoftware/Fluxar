@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['dist\\src\\cli.py'],
+    ['cli.py'],
     pathex=[],
     binaries=[],
     datas=[],

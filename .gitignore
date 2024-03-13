@@ -1,4 +1,5 @@
 extension/node_modules
-bin/build
-bin/__pycache__
+src/build
+src/__pycache__
+src/lang/__pycache__
 ./.vscode

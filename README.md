@@ -1,6 +1,6 @@
 <html>
     <div align="center">
-        <a href=""><img src="dist/img/github_thumbnail.png" alt="Fluxar" height="217" /></a>
+        <a href=""><img src="src/img/github_thumbnail.png" alt="Fluxar" height="217" /></a>
     </div>
 </html>
 <div>&nbsp;</div>
