@@ -4,7 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/dist/src",
+                "${workspaceFolder}/bin",
                 "C:\\Users\\alexk\\AppData\\Local\\Programs\\Python\\Python310\\include"
             ],
             "defines": [
