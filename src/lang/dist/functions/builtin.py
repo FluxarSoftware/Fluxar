@@ -4,7 +4,7 @@ from src.lang.dist.values import String, Number, List
 from src.lang.dist.errors import RTError
 from src.lang.dist.other.perlin import perlin
 
-from src.lang.handler import run
+import src.lang.handler as hand
 import math, random, os
 
 class BuiltInFunction(BaseFunction):
@@ -54,7 +54,7 @@ class BuiltInFunction(BaseFunction):
                 f"Failed to load script \"{fn}\"\n" + str(e),
                 exec_ctx
             ))
-        _, error = run(fn, script)
+        _, error = hand.run(fn, script)
         if error:
             return RTResult().failure(RTError(
                 self.pos_start, self.pos_end,
@@ -858,7 +858,7 @@ Number.math_huge = Number(float('inf'))
 Number.math_pi = Number(math.pi)
 
 BuiltInFunction.run             = BuiltInFunction("run")
-BuiltInFunction.print           = BuiltInFunction("println")
+BuiltInFunction.printf           = BuiltInFunction("printf")
 BuiltInFunction.print_ret       = BuiltInFunction("print_ret")
 BuiltInFunction.input           = BuiltInFunction("input")
 BuiltInFunction.input_int       = BuiltInFunction("input_int")

@@ -1,14 +1,14 @@
 import os, sys, subprocess
 import argparse, shutil, pathlib
 
-from src.lang.handler import run
+import src.lang.handler as hand
 
 name = "Fluxar"
 file_extension = "fsc"
 cmd_class = "fluxar"
 
 def run_script(script_file):
-    result, error = run('<stdin>', f'cors_run("{script_file}")')
+    result, error = hand.run('<stdin>', f'cors_run("{script_file}")')
     if error:
         print(error.as_string())
     elif result:
