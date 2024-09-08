@@ -5,8 +5,9 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/src",
-                "C:\\Users\\alexk\\AppData\\Local\\Programs\\Python\\Python310\\include",
-                "${workspaceFolder}/src/cmd"
+                "${workspaceFolder}/src/cmd",
+                "/Library/Frameworks/Python.framework/Headers",
+                "/Library/Frameworks/Python.framework/Versions/3.12/include/python3.12",
             ],
             "defines": [
                 "_DEBUG",
