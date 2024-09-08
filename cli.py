@@ -5,6 +5,7 @@ import platform, ctypes
 import src.lang.handler as hand
 
 name = "Fluxar"
+version = "1.0.0"
 file_extension = "fsc"
 cmd_class = "fluxar"
 
@@ -48,10 +49,19 @@ def build(script_name):
 def main():
     parser = argparse.ArgumentParser(description=f"Usage: {cmd_class} <command> <arg>",
                                      formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('--version', action='store_true', help='Show the current version')
+    parser.add_argument('--help', action='store_true', help='Show help information')
+
     parser.add_argument("command", help="Command to execute")
     parser.add_argument("arg", nargs="?", help="Argument for the command")
 
     args = parser.parse_args()
+    if args.version:
+        print(f"{name} version {version}")
+        sys.exit()
+    elif args.help:
+        parser.print_help()
+        sys.exit()
 
     if args.command == 'run':
         if not args.arg:
@@ -65,6 +75,18 @@ def main():
         if not args.arg:
             parser.error(f"Usage: {cmd_class} build <script>")
         build(args.arg)
+    elif args.command == "--list-commands":
+        commands = [
+            "run <script>: Run a Fluxar script.",
+            "setup: Setup the Fluxar environment.",
+            "init: Initialize a new Fluxar project.",
+            "build <script>: Build a Fluxar project.",
+            "--version: Show the current version.",
+            "--help: Show help information."
+        ]
+        print("Available commands:")
+        for command in commands:
+            print(f"  {command}")
     else:
         parser.error(f"Unknown command: {args.command}")
 
