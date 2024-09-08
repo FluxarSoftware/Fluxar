@@ -14,7 +14,7 @@
 1. **Download:** Obtain the Fluxar installer from the [Fluxar website](https://fluxar.dev/download).
 2. **Install:** Run the installer and follow the instructions.
 3. **Open Terminal:** Navigate to the Fluxar installation directory using your terminal or command prompt (cmd).
-4. **Setup:** Run the command `.\fluxar setup` (or `./fluxar setup` on Linux/macOS) to finalize the setup process.
+4. **Setup:** Run the command `.\fluxar setup` (or `sudo ./fluxar setup` on Linux/macOS) to finalize the setup process.
 5. **Troubleshooting:** If you encounter errors, try:
 - Reinstalling Fluxar
 - Running the terminal as an administrator
