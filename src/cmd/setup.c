@@ -78,12 +78,12 @@ void restartComputer() {
     }
 }
 void getMainDirectory(char *outputPath, size_t size) {
-    char currentPath[PATH_MAX];
     #ifdef _WIN32
         GetModuleFileName(NULL, currentPath, sizeof(currentPath));
         PathRemoveFileSpec(currentPath);
         PathRemoveFileSpec(currentPath);
     #elif __APPLE__
+        char currentPath[PATH_MAX];
         uint32_t pathSize = PATH_MAX;
         if (_NSGetExecutablePath(currentPath, &pathSize) != 0) {
             fprintf(stderr, "Error getting executable path.\n");
@@ -92,6 +92,7 @@ void getMainDirectory(char *outputPath, size_t size) {
         char *dir = dirname(currentPath);
         strncpy(outputPath, dir, size);
     #elif __linux__
+        char currentPath[PATH_MAX];
         ssize_t count = readlink("/proc/self/exe", currentPath, sizeof(currentPath));
         if (count == -1) {
             perror("Error getting executable path");
