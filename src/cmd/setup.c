@@ -7,7 +7,6 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <Shlwapi.h> // For PathRemoveFileSpec
-#pragma comment(lib, "Shlwapi.lib")
 #define DLL_EXPORT __declspec(dllexport)
 #else
 #include <unistd.h>
