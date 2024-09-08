@@ -79,9 +79,22 @@ void restartComputer() {
 }
 void getMainDirectory(char *outputPath, size_t size) {
     #ifdef _WIN32
-        GetModuleFileName(NULL, currentPath, sizeof(currentPath));
-        PathRemoveFileSpec(currentPath);
-        PathRemoveFileSpec(currentPath);
+        char currentPath[MAX_PATH];
+        DWORD length = GetCurrentDirectory(sizeof(currentPath), currentPath);
+        if (length == 0 || length > sizeof(currentPath)) {
+            printf("Error getting current directory: %lu\n", GetLastError());
+            exit(EXIT_FAILURE);
+        }
+        while (1) {
+            char testPath[MAX_PATH];
+            snprintf(testPath, sizeof(testPath), "%s\\src", currentPath);
+            if (PathFileExists(testPath)) { break; }
+            if (!PathRemoveFileSpec(currentPath)) {
+                printf("Error: Could not navigate to main directory.\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+        strncpy(outputPath, currentPath, size);
     #elif __APPLE__
         char currentPath[PATH_MAX];
         uint32_t pathSize = PATH_MAX;
