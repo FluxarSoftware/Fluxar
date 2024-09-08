@@ -1,6 +1,7 @@
 import os, sys, subprocess
 import argparse, shutil, pathlib
 
+import platform, ctypes
 import src.lang.handler as hand
 
 name = "Fluxar"
@@ -18,10 +19,14 @@ def run_script(script_file):
             print(repr(result))
 
 def setup():
+    system_os = platform.system()  # Renamed to avoid shadowing the os module
+    dir_path = pathlib.Path().resolve()
+    path = dir_path / "src" / "cmd" / "setup.dll"
     try:
-        dir_path = pathlib.Path().resolve()
-        path = dir_path / "cmd" / "setx.exe"
-        subprocess.run([str(path)], check=True)
+        lib = ctypes.CDLL(str(path))
+        lib.start.argtypes = []
+        lib.start.restype = None
+        lib.start()
     except Exception as e:
         sys.stderr.write("\nError setting up Fluxar: {}\n".format(e))
 

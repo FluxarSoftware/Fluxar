@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.extension.Fluxar</string>
+            <key>UTTypeDescription</key>
+            <string>Fluxar Source Code</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <string>fsc</string>
+                <key>public.mime-type</key>
+                <string>text/plain</string>
+            </dict>
+        </dict>
+    </array>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Fluxar Source Code</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerContentType</key>
+            <string>com.extension.Fluxar</string>
+            <key>LSHandlerPreferredVersions</key>
+            <dict>
+                <key>LSHandlerRoleAll</key>
+                <string>com.extension.Fluxar</string>
+            </dict>
+        </dict>
+    </array>
+</dict>
+</plist>

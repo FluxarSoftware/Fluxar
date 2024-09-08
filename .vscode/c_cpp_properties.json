@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/src",
-                "C:\\Users\\alexk\\AppData\\Local\\Programs\\Python\\Python310\\include"
+                "C:\\Users\\alexk\\AppData\\Local\\Programs\\Python\\Python310\\include",
+                "${workspaceFolder}/src/cmd"
             ],
             "defines": [
                 "_DEBUG",
