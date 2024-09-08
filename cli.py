@@ -21,8 +21,10 @@ def run_script(script_file):
 def setup():
     system_os = platform.system()  # Renamed to avoid shadowing the os module
     dir_path = pathlib.Path().resolve()
-    path = dir_path / "src" / "cmd" / "setup.dll"
+    path = dir_path / "src" / "cmd" / "setup.dynlib"
     try:
+        if system_os == "Windows":
+            path = dir_path / "src" / "cmd" / "setup.dll"
         lib = ctypes.CDLL(str(path))
         lib.start.argtypes = []
         lib.start.restype = None
