@@ -5,9 +5,8 @@
 </html>
 <div>&nbsp;</div>
 
-- Basic knowledge of command-line interfaces (CLI)
-- Familiarity with version control (e.g., Git, if contributing)
-- Text editor or IDE of your choice
+# WORK IN PROGRESS! 
+If you want to contribute, that would be really appreciated!
 
 ### Installation
 
