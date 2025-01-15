@@ -1,0 +1,9 @@
+// --- Test
+class Bagel {}
+var a = Bagel();
+print a.test;
+
+// --- Expected
+// Error:
+// Not field names test on this instance
+//

@@ -1,0 +1,12 @@
+// --- Test
+class Greeter {
+    greet() {
+        print "Hello, " + this.name;
+    }
+}
+var g = Greeter();
+g.greet();
+
+// --- Expected
+// Error:
+// No field named name on this instance

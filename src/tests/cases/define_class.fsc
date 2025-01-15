@@ -1,0 +1,10 @@
+// --- Test
+class New {
+    serveOn() {
+        return "Scones";
+    }
+}
+print New;
+
+// --- Expected
+// Class 'New'
