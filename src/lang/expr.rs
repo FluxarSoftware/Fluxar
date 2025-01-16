@@ -18,6 +18,7 @@ use CallableImpl::*;
 pub struct FluxarFunctionImpl {
     pub name: String, pub arity: usize,
     pub parent_env: Environment, pub params: Vec<Token>,
+    pub generics: Vec<Token>, pub return_type: Option<Token>,
     pub body: Vec<Box<Statement>>,
 }
 #[derive(Clone)]
@@ -30,7 +31,8 @@ pub enum LiteralValue {
     Number(f64), StringValue(String),
     True, False, Nil, Callable(CallableImpl),
     FluxarClass { 
-        name: String, methods: HashMap<String, FluxarFunctionImpl>,
+        name: String, generics: Vec<Token>,
+        methods: HashMap<String, FluxarFunctionImpl>,
         superclass: Option<Box<LiteralValue>>
     },
     FluxarInstance { 
@@ -74,7 +76,8 @@ fn unwrap_as_string(literal: Option<scanner::LiteralValue>) -> String {
 }
 macro_rules! class_name {
     ($class:expr) => {{
-        if let LiteralValue::FluxarClass { name, methods: _, superclass: _ } = &**$class { name }
+        if let LiteralValue::FluxarClass { name, generics: _, 
+            methods: _, superclass: _ } = &**$class { name }
         else { panic!("Unreachable") }
     }};
 }
@@ -92,7 +95,8 @@ impl LiteralValue {
             LiteralValue::Callable(CallableImpl::NativeFunction(
                 NativeFunctionImpl { name, arity, .. }
             )) => format!("{name}/{arity}"),
-            LiteralValue::FluxarClass { name, methods: _, superclass: _ } => format!("Class '{name}'"),
+            LiteralValue::FluxarClass { name, generics: _,
+                methods: _, superclass: _ } => format!("Class '{name}'"),
             LiteralValue::FluxarInstance { class, fields: _ }
                 => format!("Instance if '{}'", class_name!(class)),
         }
@@ -105,7 +109,8 @@ impl LiteralValue {
             LiteralValue::False => "Boolean",
             LiteralValue::Nil => "nil",
             LiteralValue::Callable(_) => "Callable",
-            LiteralValue::FluxarClass { name: _, methods: _, superclass: _ } => "Class",
+            LiteralValue::FluxarClass { name: _, generics: _, 
+                methods: _, superclass: _ } => "Class",
             LiteralValue::FluxarInstance { class, fields: _ } => &class_name!(class),
         }
     }
@@ -147,9 +152,13 @@ use crate::statements::Statement;
 #[derive(Clone)]
 pub enum Expr {
     Assign { id: usize, name: Token, value: Box<Expr> },
-    AnonFunction { id: usize, paren: Token, arguments: Vec<Token>, body: Vec<Box<Statement>> },
+    AnonFunction { 
+        id: usize, paren: Token, generics: Vec<Token>, 
+        arguments: Vec<Token>, return_type: Option<Token>,
+        body: Vec<Box<Statement>> 
+    },
     Binary { id: usize, left: Box<Expr>, operator: Token, right: Box<Expr> },
-    Call { id: usize, callee: Box<Expr>, paren: Token, arguments: Vec<Expr> },
+    Call { id: usize, callee: Box<Expr>, paren: Token, arguments: Vec<Expr>, generics: Vec<Token> },
     Get { id: usize, object: Box<Expr>, name: Token },
     Grouping { id: usize, expression: Box<Expr> },
     Literal { id: usize, value: LiteralValue },
@@ -158,7 +167,7 @@ pub enum Expr {
     This { id: usize, keyword: Token },
     Super { id: usize, keyword: Token, method: Token },
     Unary { id: usize, operator: Token, right: Box<Expr> },
-    Variable { id: usize, name: Token },
+    Variable { id: usize, var_type: Option<Token>, name: Token },
 }
 impl std::fmt::Debug for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -181,10 +190,10 @@ impl Eq for Expr {}
 impl Expr {
     pub fn get_id(&self) -> usize {
         match self {
-            Expr::AnonFunction { id, paren: _, arguments: _, body: _ } => *id,
+            Expr::AnonFunction { id, paren: _, generics: _, arguments: _, return_type: _, body: _ } => *id,
             Expr::Assign { id, name: _, value: _ } => *id,
             Expr::Binary { id, left: _, operator: _, right: _ } => *id,
-            Expr::Call { id, callee: _, paren: _, arguments: _ } => *id,
+            Expr::Call { id, callee: _, paren: _, arguments: _, generics: _ } => *id,
             Expr::Get { id, object: _, name: _ } => *id,
             Expr::Grouping { id, expression: _ } => *id,
             Expr::Literal { id, value: _ } => *id,
@@ -193,7 +202,7 @@ impl Expr {
             Expr::This { id, keyword: _ } => *id,
             Expr::Super { id, keyword: _, method: _ } => *id,
             Expr::Unary { id, operator: _, right: _ } => *id,
-            Expr::Variable { id, name: _ } => *id,
+            Expr::Variable { id, var_type: _, name: _ } => *id,
         }
     }
 }
@@ -202,12 +211,12 @@ impl Expr {
     pub fn to_string(&self) -> String {
         match self {
             Expr::Assign { id: _, name, value } => format!("({name:?} = {})", value.to_string()),
-            Expr::AnonFunction { id: _, paren: _, arguments, body: _ } => format!("anon/{}", arguments.len()),
+            Expr::AnonFunction { id: _, paren: _, generics: _, arguments, return_type: _, body: _ } => format!("anon/{}", arguments.len()),
             Expr::Binary { id: _, left, operator, right } => format!(
                 "({} {} {})", operator.lexeme,
                 left.to_string(), right.to_string()
             ),
-            Expr::Call { id: _, callee, paren: _, arguments } => format!("({} {:?})", (*callee).to_string(), arguments),
+            Expr::Call { id: _, callee, paren: _, arguments, generics: _ } => format!("({} {:?})", (*callee).to_string(), arguments),
             Expr::Get { id: _, object, name } => format!("(get {} {})", object.to_string(), name.lexeme),
             Expr::Grouping { id: _, expression } => format!("(group {})", (*expression).to_string()),
             Expr::Literal { id: _, value } => format!("{}", value.to_string()),
@@ -226,7 +235,7 @@ impl Expr {
                 let right_str = (*right).to_string();
                 format!("({} {})", operator_str, right_str)
             },
-            Expr::Variable { id: _, name } => format!("(var {})", name.lexeme),
+            Expr::Variable { id: _, var_type: _, name } => format!("(var {})", name.lexeme),
         }
     }
     pub fn evaluate(
@@ -239,15 +248,17 @@ impl Expr {
                 if assign_success { Ok(new_value) }
                 else { Err(format!("Variable '{}' has not been declared.", name.lexeme)) }
             },
-            Expr::AnonFunction { id: _, paren: _, arguments, body } => {
+            Expr::AnonFunction { id: _, paren: _, generics, arguments, return_type, body } => {
                 let arity = arguments.len(); 
                 let arguments: Vec<Token> = arguments.iter().map(|t| (*t).clone()).collect();
                 let body: Vec<Box<Statement>> = body.iter().map(|b| (*b).clone()).collect();
+                let generics: Vec<Token> = generics.iter().map(|g| (*g).clone()).collect();
 
                 let callable_impl = CallableImpl::FluxarFunction(
                     FluxarFunctionImpl { 
                         name: "anon_function".to_string(), arity,
-                        parent_env: environment.clone(), params: arguments, body,
+                        parent_env: environment.clone(), params: arguments, 
+                        generics, return_type: return_type.clone(), body,
                 });
                 Ok(Callable(callable_impl))
             },
@@ -256,7 +267,7 @@ impl Expr {
                 let right_val = right.evaluate(environment.clone())?;
                 self.evaluate_binary(operator, left_val, right_val)
             },
-            Expr::Call { id: _, callee, paren: _, arguments } => {
+            Expr::Call { id: _, callee, paren: _, arguments, generics: _ } => {
                 let callable = (*callee).evaluate(environment.clone())?;
                 let callable_clone = callable.clone();
                 match callable {
@@ -270,7 +281,7 @@ impl Expr {
                         }
                         Ok((nativefun.fun)(&evaluated_arguments))
                     }
-                    FluxarClass { name: _, methods, superclass: _ } => {
+                    FluxarClass { name: _, generics: _, methods, superclass: _ } => {
                         let instance = FluxarInstance { 
                             class: Box::new(callable_clone.clone()), 
                             fields: Rc::new(RefCell::new(vec![])) 
@@ -304,7 +315,7 @@ impl Expr {
                     // Are we getting a method in the object?
                     // TODO: Make a function that finds a method in a class by looking first at the
                     // class, then at the superclasses in a recursive manner
-                    if let FluxarClass { name: _, methods: _, superclass: _ } = class.as_ref() {
+                    if let FluxarClass { name: _, generics: _, methods: _, superclass: _ } = class.as_ref() {
                         if let Some(method) = find_method(&name.lexeme, *class.clone()) {
                             let mut callable_impl = method.clone();
                             let mut new_env = callable_impl.parent_env.enclose();
@@ -363,7 +374,7 @@ impl Expr {
                     environment.dump(0)
                 ));
                 let instance = environment.get_this_instance(self.get_id()).unwrap();
-                if let FluxarClass { name: _, methods, superclass: _ } = superclass.clone() {
+                if let FluxarClass { name: _, generics: _, methods, superclass: _ } = superclass.clone() {
                     if let Some(method_value) = methods.get(&method.lexeme) {
                         let mut method = method_value.clone();
                         method.parent_env = method.parent_env.enclose();
@@ -381,7 +392,7 @@ impl Expr {
                 let right_val = right.evaluate(environment)?;
                 self.evaluate_unary(operator, right_val)
             },
-            Expr::Variable { id: _, name } => match environment.get(&name.lexeme, self.get_id()) {
+            Expr::Variable { id: _, var_type: _, name } => match environment.get(&name.lexeme, self.get_id()) {
                 Some(value) => Ok(value.clone()),
                 None => Err(format!(
                     "Variable '{}' has not been declared at distance {:?}", 
@@ -438,7 +449,7 @@ impl Expr {
     }
 }
 pub fn find_method(name: &str, class: LiteralValue) -> Option<FluxarFunctionImpl> {
-    if let FluxarClass { name: _, methods, superclass } = class {
+    if let FluxarClass { name: _, generics: _, methods, superclass } = class {
         if let Some(fun) = methods.get(name) { return Some(fun.clone()); }
         if let Some(superclass) = superclass { return find_method(name, *superclass.clone()); }
         None

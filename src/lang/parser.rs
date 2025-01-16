@@ -13,7 +13,7 @@ impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0, next_id: 0 }
     }
-    fn get_id(&mut self) -> usize {
+    pub fn get_id(&mut self) -> usize {
         let id = self.next_id;
         self.next_id += 1;
         id
@@ -55,16 +55,28 @@ impl Parser {
     fn var_declaration(&mut self) -> Result<Statement, String> {
         let initializer;
         let token = self.consume(Identifier, "Expected variable name.")?;
+        let var_type = if self.match_token(TokenType::Colon) {
+            Some(self.consume(TokenType::Identifier, "Expected type annotation")?)
+        } else { None };
+
         if self.match_token(Equal) { initializer = self.expression()?; }
         else { initializer = Literal { id: self.get_id(), value: LiteralValue::Nil }; }
         self.consume(Semicolon, "Expected ';' after variable declaration!")?;
-        Ok(Statement::Var { name: token, initializer })
+        Ok(Statement::Var { name: token, var_type, initializer })
     }
     fn class_declaration(&mut self) -> Result<Statement, String> {
         let name = self.consume(Identifier, "Expected name after 'class' keyword.")?;
+        let mut generics = Vec::new();
+        if self.match_token(TokenType::Less) {
+            loop {
+                generics.push(self.consume(Identifier, "Expected type parameter.")?);
+                if !self.match_token(Comma) { break; }
+            }
+            self.consume(Greater, "Expected '>' after type parameters.")?;
+        }
         let superclass = if self.match_token(TokenType::Less) {
             self.consume(Identifier, "Expected superclass name after '<'.")?;
-            Some(Expr::Variable { id: self.get_id(), name: self.previous() })
+            Some(Expr::Variable { id: self.get_id(), var_type: None, name: self.previous() })
         } else { None };
         self.consume(LeftBrace, "Expected '{' before class body.")?;
 
@@ -74,7 +86,7 @@ impl Parser {
             methods.push(Box::new(method));
         }
         self.consume(RightBrace, "Expected '}' after class body.")?;
-        Ok(Statement::Class {name, methods, superclass})
+        Ok(Statement::Class {name, generics, methods, superclass})
     }
     fn function(&mut self, kind: FunctionKind) -> Result<Statement, String> {
         let name = self.consume(Identifier, &format!("Expected {kind:?} name"))?;
@@ -85,6 +97,14 @@ impl Parser {
         }
         self.consume(LeftParen, &format!("Expected '(' after {kind:?} name"))?;
 
+        let mut generics = Vec::new();
+        if self.match_token(Less) {
+            loop {
+                generics.push(self.consume(Identifier, "Expected type parameter.")?);
+                if !self.match_token(Comma) { break; }
+            }
+            self.consume(Greater, "Expected '>' after type parameters.")?;
+        }
         let mut parameters = vec![];
         if !self.check(RightParen) {
             loop {
@@ -99,12 +119,16 @@ impl Parser {
             }
         }
         self.consume(RightParen, "Expected ')' after parameters")?;
+        let return_type = if self.match_token(Arrow) {
+            Some(self.consume(Identifier, "Expected return type after '->'")?)
+        } else { None };
+        
         self.consume(LeftBrace, &format!("Expected '{{' before {kind:?} body"))?;
         let body = match self.block_statement()? {
             Statement::Block { statements } => statements,
             _ => panic!("Block statement parsed something that was not a block"),
         };
-        Ok(Statement::Function { name, params: parameters, body })
+        Ok(Statement::Function { name, params: parameters, generics, return_type, body })
     }
     fn statement(&mut self) -> Result<Statement, String> {
         if self.match_token(Print) { self.print_statement() }
@@ -210,6 +234,16 @@ impl Parser {
     }
     fn function_expression(&mut self) -> Result<Expr, String> {
         let paren = self.consume(LeftParen, "Expected '(' after anonymous function")?;
+        let mut generics = Vec::new();
+        if self.match_token(Less) {
+            loop {
+                generics.push(self.consume(Identifier, "Expected type parameter.")?);
+                if !self.match_token(Comma) {
+                    break;
+                }
+            }
+            self.consume(Greater, "Expected '>' after type parameters.")?;
+        }
         let mut parameters = vec![];
         if !self.check(RightParen) {
             loop {
@@ -223,20 +257,24 @@ impl Parser {
                 if !self.match_token(Comma) { break; }
             }
         }
+        let return_type = if self.match_token(Greater) {
+            Some(self.consume(Identifier, "Expected return type after '->'")?)
+        } else { None };
+
         self.consume(RightParen, "Expected ')' after anonymous function parameters")?;
         self.consume(LeftBrace, "Expected '{' after anonymous function declaration")?;
         let body = match self.block_statement()? {
             Statement::Block { statements } => statements,
             _ => panic!("Block statement parsed something that was not a block")
         };
-        Ok(Expr::AnonFunction { id: self.get_id(), paren, arguments: parameters, body })
+        Ok(Expr::AnonFunction { id: self.get_id(), paren, generics, arguments: parameters, return_type, body })
     }
     fn assignment(&mut self) -> Result<Expr, String> {
         let expr = self.pipe()?;
         if self.match_token(Equal) {
             let value = self.expression()?;
             match expr {
-                Variable { id: _, name } => { Ok(Assign { id: self.get_id(), name, value: Box::from(value) }) },
+                Variable { id: _, var_type: _, name } => { Ok(Assign { id: self.get_id(), name, value: Box::from(value) }) },
                 Get { id: _, object, name } => { Ok(Set { id: self.get_id(), object, name, value: Box::new(value) }) }
                 _ => Err("Invalid assignment target!".to_string())
             }
@@ -249,7 +287,7 @@ impl Parser {
             let function = self.or()?;
             expr = Call {
                 id: self.get_id(), callee: Box::new(function),
-                paren: pipe, arguments: vec![expr],
+                paren: pipe, arguments: vec![expr], generics: vec![],
             };
         }
         Ok(expr)
@@ -353,6 +391,16 @@ impl Parser {
     }
     fn finish_call(&mut self, callee: Expr) -> Result<Expr, String> {
         let mut arguments = vec![];
+        let mut generics = vec![];
+
+        if self.match_token(Less) {
+            loop {
+                let generic = self.consume(Identifier, "Expected type parameter.")?;
+                generics.push(generic);
+                if !self.match_token(Comma) { break; }
+            }
+            self.consume(Greater, "Expected '>' after type parameters.")?;
+        }
         if !self.check(RightParen) {
             loop {
                 let arg = self.expression()?;
@@ -367,7 +415,7 @@ impl Parser {
             }
         }
         let paren = self.consume(RightParen, "Expected ')' after arguments.")?;
-        Ok(Call { id: self.get_id(), callee: Box::new(callee), paren, arguments })
+        Ok(Call { id: self.get_id(), callee: Box::new(callee), paren, arguments, generics })
     }
     fn primary(&mut self) -> Result<Expr, String> {
         let result;
@@ -385,7 +433,64 @@ impl Parser {
             },
             Identifier => {
                 self.advance();
-                result = Variable { id: self.get_id(), name: self.previous() };
+                if self.match_token(Less) {
+                    let mut generics = Vec::new();
+                    loop {
+                        generics.push(self.consume(Identifier, "Expected type parameter.")?);
+                        if !self.match_token(Comma) { break; }
+                    }
+                    self.consume(Greater, "Expected '>' after type parameters.")?;
+                    if self.match_token(LeftParen) {
+                        // It's a function call with generics
+                        let paren = self.previous(); // Capture the '(' token
+                        let mut arguments = vec![];
+                        if !self.check(RightParen) {
+                            loop {
+                                let arg = self.expression()?;
+                                arguments.push(arg);
+                                if !self.match_token(Comma) { break; }
+                            }
+                        }
+                        self.consume(RightParen, "Expected ')' after arguments.")?;
+                        result = Expr::Call {
+                            id: self.get_id(),
+                            callee: Box::new(Expr::Variable {
+                                id: self.get_id(),
+                                var_type: None, name: token 
+                            }),
+                            paren, arguments,
+                            generics
+                        };
+                    } else {
+                        // It's a generic class instantiation
+                        self.consume(LeftParen, "Expected '(' after type parameters")?;
+                        let paren = self.previous(); // Capture the '(' token
+                        let mut arguments = vec![];
+                        if !self.check(RightParen) {
+                            loop {
+                                let arg = self.expression()?;
+                                arguments.push(arg);
+                                if !self.match_token(Comma) { break; }
+                            }
+                        }
+                        self.consume(RightParen, "Expected ')' after arguments.")?;
+                        result = Expr::Call {
+                            id: self.get_id(),
+                            callee: Box::new(Expr::Variable {
+                                id: self.get_id(),
+                                var_type: None, name: token
+                            }),
+                            paren,
+                            arguments,
+                            generics
+                        };
+                    }
+                } else {
+                    result = Expr::Variable {
+                        id: self.get_id(), var_type: None,
+                        name: self.previous(),
+                    };
+                }
             },
             Fun => {
                 self.advance();

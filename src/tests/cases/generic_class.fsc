@@ -1,0 +1,20 @@
+// --- Test
+class Box<T> {
+    init(val) {
+        this.value = val;
+        print T;
+    }
+    getValue() {
+        return this.value;
+    }
+}
+
+var intBox: int = Box<int>(35);
+var strBox: string = Box<string>("Hello");
+
+print intBox.getValue();
+print strBox.getValue();
+
+// --- Expected
+// 35
+// "Hello"

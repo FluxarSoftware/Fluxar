@@ -85,6 +85,7 @@ impl Scanner {
             '.' => self.add_token(Dot),
             '-' => self.add_token(Minus),
             '+' => self.add_token(Plus),
+            ':' => self.add_token(Colon),
             ';' => self.add_token(Semicolon),
             '*' => self.add_token(Star),
             '!' => {
@@ -101,7 +102,8 @@ impl Scanner {
                 self.add_token(token);
             },
             '>' => {
-                let token = if self.char_match('=') { GreaterEqual } else { Greater };
+                let token = if self.char_match('=') { GreaterEqual } 
+                else if self.char_match('-') { Arrow } else { Greater };
                 self.add_token(token);
             },
             '/' => {
@@ -214,14 +216,14 @@ impl Scanner {
 pub enum TokenType {
     // Single-char tokens
     LeftParen, RightParen, LeftBrace, RightBrace,
-    Comma, Dot, Minus, Plus, Semicolon, Slash, Star,
+    Comma, Dot, Minus, Plus, Colon, Semicolon, Slash, Star,
 
     // One or two chars
     Bang, BangEqual,
     Equal, EqualEqual,
     Greater, GreaterEqual,
     Less, LessEqual, 
-    Pipe, Gets,
+    Pipe, Gets, Arrow,
 
     // Literals
     Identifier, StringLit, Number,

@@ -1,5 +1,6 @@
-use crate::expr::Expr;
+use crate::expr::{Expr, LiteralValue};
 use crate::scanner::Token;
+use crate::type_::Type;
 use crate::statements::Statement;
 use std::collections::HashMap;
 
@@ -31,10 +32,10 @@ impl Resolver {
     fn resolve_internal(&mut self, statement: &Statement) -> Result<(), String> {
         match statement {
             Statement::Block { statements: _ } => self.resolve_block(statement)?,
-            Statement::Var { name: _, initializer: _ } => self.resolve_var(statement)?,
-            Statement::Class { name, methods, superclass } => { 
+            Statement::Var { name: _, var_type: _, initializer: _ } => self.resolve_var(statement)?,
+            Statement::Class { name, generics, methods, superclass } => { 
                 if let Some(super_expr) = superclass {
-                    if let Expr::Variable { id: _, name: super_name } = super_expr {
+                    if let Expr::Variable { id: _, var_type: _, name: super_name } = super_expr {
                         if super_name.lexeme == name.lexeme {
                             return Err("A class cannot inherit from itself".to_string());
                         }
@@ -44,6 +45,10 @@ impl Resolver {
                 }
                 self.declare(name)?; self.define(name); self.begin_scope();
                 self.scopes.last_mut().unwrap().insert("this".to_string(), true);
+                for generic in generics {
+                    self.declare(generic)?;
+                    self.define(generic);
+                }
                 for method in methods {
                     let declaration = FunctionType::Method;
                     self.resolve_function(method, declaration)?;
@@ -53,7 +58,7 @@ impl Resolver {
                     self.end_scope();
                 }
              },
-            Statement::Function { name: _, params: _, body: _ } => self.resolve_function(statement, FunctionType::Function)?,
+            Statement::Function { name: _, params: _, generics: _, return_type: _, body: _ } => self.resolve_function(statement, FunctionType::Function)?,
             Statement::Expression { expression } => self.resolve_expr(expression)?,
             Statement::IfStmt { predicate: _, then: _, els: _ } => self.resolve_if_stmt(statement)?,
             Statement::Print { expression } => self.resolve_expr(expression)?,
@@ -84,8 +89,19 @@ impl Resolver {
         Ok(())
     }
     fn resolve_var(&mut self, statement: &Statement) -> Result<(), String> {
-        if let Statement::Var { name, initializer } = statement {
+        if let Statement::Var { name, var_type, initializer } = statement {
             self.declare(name)?;
+            if let Some(var_type) = var_type {
+                let expected_type = self.resolve_type(var_type)?;
+                let actual_type = self.infer_type(initializer)?;
+    
+                if expected_type != actual_type {
+                    return Err(format!(
+                        "Type error: expected {:?}, but found {:?} for variable {}",
+                        expected_type, actual_type, name.lexeme
+                    ));
+                }
+            }    
             self.resolve_expr(initializer)?;
             self.define(name);
         } else if let Statement::CmdFunction { name, cmd: _ } = statement {
@@ -94,23 +110,31 @@ impl Resolver {
         Ok(())
     }
     fn resolve_function(&mut self, statement: &Statement, fn_type: FunctionType) -> Result<(), String> {
-        if let Statement::Function { name, params, body } = statement {
+        if let Statement::Function { name, generics, return_type, params, body } = statement {
             self.declare(name)?; self.define(name);
-            self.resolve_function_helper(params, &body.iter().map(|b| 
+            self.resolve_function_helper(params, generics, return_type, &body.iter().map(|b| 
                 b.as_ref()).collect(), fn_type)
         } else { panic!("Wrong type in resolve function"); }
     }
     fn resolve_function_helper(
-        &mut self, params: &Vec<Token>, 
+        &mut self, params: &Vec<Token>, generics: &Vec<Token>, return_type: &Option<Token>,
         body: &Vec<&Statement>, resolving_function: FunctionType
     ) -> Result<(), String> {
         let enclosing_function = self.current_function;
         self.current_function = resolving_function;
         self.begin_scope();
 
+        for generic in generics {
+            self.declare(generic)?;
+            self.define(generic);
+        }
         for param in params {
             self.declare(param)?;
             self.define(param);
+        }
+        if let Some(return_type) = return_type {
+            self.declare(return_type)?;
+            self.define(return_type);
         }
         self.resolve_many(body)?;
         self.end_scope(); self.current_function = enclosing_function;
@@ -143,18 +167,25 @@ impl Resolver {
     fn resolve_expr(&mut self, expr: &Expr) -> Result<(), String> {
         match expr {
             Expr::Assign { id: _, name: _, value: _ } => self.resolve_expr_assign(expr, expr.get_id()),
-            Expr::AnonFunction { id: _, paren: _, arguments, body } 
-                => self.resolve_function_helper(arguments, 
+            Expr::AnonFunction { id: _, paren: _, generics, arguments, return_type, body } 
+                => self.resolve_function_helper(generics, arguments, return_type, 
                     &body.iter().map(|b| b.as_ref()).collect(),
                     FunctionType::Function),
             Expr::Binary { id: _, left, operator: _, right } => {
                 self.resolve_expr(left)?;
                 self.resolve_expr(right)
             },
-            Expr::Call { id: _, callee, paren: _, arguments } => {
+            Expr::Call { id: _, callee, paren: _, arguments, generics } => {
                 self.resolve_expr(callee.as_ref())?;
                 for arg in arguments {
                     self.resolve_expr(arg)?;
+                }
+                for generic in generics {
+                    let var_type = Some(generic.clone());
+                    self.resolve_expr(&Expr::Variable {
+                        id: expr.get_id(), var_type,
+                        name: generic.clone(),
+                    })?;
                 }
                 Ok(())
             },
@@ -180,13 +211,13 @@ impl Resolver {
                     return Err("Class has no superclass".to_string());
                 }; self.resolve_local(keyword, expr.get_id())
             }
-            Expr::Variable { id: _, name: _ } => self.resolve_expr_var(expr, expr.get_id()),
+            Expr::Variable { id: _, var_type: _, name: _ } => self.resolve_expr_var(expr, expr.get_id()),
             Expr::Unary { id: _, operator: _, right } => self.resolve_expr(right),
         }
     }
     fn resolve_expr_var(&mut self, expr: &Expr, resolve_id: usize) -> Result<(), String> {
         match expr {
-            Expr::Variable { id: _, name } => {
+            Expr::Variable { id: _, var_type: _, name } => {
                 if !self.scopes.is_empty() {
                     if let Some(false) = self.scopes[self.scopes.len() - 1].get(&name.lexeme) {
                         return Err("Can't read local variable in it's own initializer".to_string());
@@ -194,8 +225,8 @@ impl Resolver {
                 }
                 self.resolve_local(name, resolve_id)
             },
-            Expr::Call { id: _, callee, paren: _, arguments: _ } => match callee.as_ref() {
-                Expr::Variable { id: _, name } => self.resolve_local(&name, resolve_id),
+            Expr::Call { id: _, callee, paren: _, arguments: _, generics: _ } => match callee.as_ref() {
+                Expr::Variable { id: _, var_type: _, name } => self.resolve_local(&name, resolve_id),
                 _ => panic!("Wrong type in resolve_expr_var"),
             },
             _ => panic!("Wrong type in resolve_expr_var"),
@@ -220,5 +251,42 @@ impl Resolver {
             self.resolve_local(name, resolve_id)?;
         } else { panic!("Wrong type in resolve assign"); }
         Ok(())
+    }
+    fn resolve_type(&self, token: &Token) -> Result<Type, String> {
+        Type::from_str(&token.lexeme)
+    }
+    fn infer_type(&self, expr: &Expr) -> Result<Type, String> {
+        match expr {
+            Expr::Literal { id: _, value } => match &value {
+                LiteralValue::Number(_) => Ok(Type::Int),
+                LiteralValue::StringValue(_) => Ok(Type::String),
+                _ => Err(format!("Unknown literal type")),
+            },
+            Expr::Call { callee, arguments, generics, .. } => {
+                let callee_type = self.infer_type(callee)?;
+                if let Type::Generic(ref type_name) = callee_type {
+                    if type_name == "Box" {
+                        if generics.len() == 1 {
+                            let generic_type = self.resolve_type(&generics[0])?;
+                            return Ok(Type::Class(Box::new(generic_type)));
+                        } else {
+                            return Err(format!("Box type requires exactly one generic parameter"));
+                        }
+                    }
+                }
+                for arg in arguments {
+                    self.infer_type(arg)?;
+                }
+                Ok(callee_type)
+            },
+            Expr::Variable { name, var_type, .. } => {
+                if let Some(var_type) = var_type {
+                    self.resolve_type(var_type)
+                } else {
+                    Err(format!("Cannot infer type for variable {}", name.lexeme))
+                }
+            },
+            _ => Err(format!("Cannot infer type for expression")),
+        }
     }
 }

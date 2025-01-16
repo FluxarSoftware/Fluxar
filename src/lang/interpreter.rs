@@ -39,7 +39,7 @@ impl Interpreter {
                     let value = expression.evaluate(self.environment.clone())?;
                     println!("{}", value.to_string());
                 },
-                Statement::Var { name, initializer } => {
+                Statement::Var { name, var_type: _, initializer } => {
                     let value = initializer.evaluate(self.environment.clone())?;
                     self.environment.define(name.lexeme.clone(), value);
                 },
@@ -54,12 +54,12 @@ impl Interpreter {
                     self.environment = old_environment;
                     block_result?; 
                 },
-                Statement::Function { name, params: _, body: _ } => {
+                Statement::Function { name, params: _, generics: _, return_type: _, body: _ } => {
                     let callable = self.make_function(stmt);
                     let fun = LiteralValue::Callable(CallableImpl::FluxarFunction(callable));
                     self.environment.define(name.lexeme.clone(), fun);
                 }
-                Statement::Class { name, methods, superclass } => {
+                Statement::Class { name, generics, methods, superclass } => {
                     let mut methods_map = HashMap::new();
                     // Insert the methods of the superclass into the methods of this class
                     let superclass_value;
@@ -72,18 +72,22 @@ impl Interpreter {
 
                     self.environment.define(name.lexeme.clone(), LiteralValue::Nil);
                     self.environment = self.environment.enclose();
+                    for generic in generics {
+                        self.environment.define(generic.lexeme.clone(), LiteralValue::Nil);
+                    }
                     if let Some(sc) = superclass_value.clone() {
                         self.environment.define("super".to_string(), *sc);
                     }
                     for method in methods {
-                        if let Statement::Function { name, params: _, body: _ } = method.as_ref() {
+                        if let Statement::Function { name, params: _, generics: _, return_type: _, body: _ } = method.as_ref() {
                             let function = self.make_function(method);
                             methods_map.insert(name.lexeme.clone(), function);
                         } else { panic!("Something that was not a function was in the methods of a class"); }
                     }
                     let class = LiteralValue::FluxarClass { 
-                        name: name.lexeme.clone(), methods: methods_map,
-                        superclass: superclass_value
+                        name: name.lexeme.clone(), 
+                        generics: generics.iter().map(|g| (*g).clone()).collect(),
+                        methods: methods_map, superclass: superclass_value
                     };
                     if !self.environment.assign_global(&name.lexeme, class) {
                         return Err(format!("Class definition failed for {}", name.lexeme));
@@ -138,14 +142,16 @@ impl Interpreter {
         Ok(())
     }
     fn make_function(&self, fn_stmt: &Statement) -> FluxarFunctionImpl {
-        if let Statement::Function { name, params, body } = fn_stmt {
+        if let Statement::Function { name, params, generics, return_type, body } = fn_stmt {
             let (arity, name_clone) = (params.len(), name.lexeme.clone());
             let params: Vec<Token> = params.iter().map(|t| (*t).clone()).collect();
+            let generics: Vec<Token> = generics.iter().map(|g| (*g).clone()).collect();
             let body: Vec<Box<Statement>> = body.iter().map(|b| (*b).clone()).collect();
 
             let parent_env = self.environment.clone();
             let callable_impl = FluxarFunctionImpl {
-                name: name_clone, arity, parent_env, params, body
+                name: name_clone, arity, parent_env, params,
+                generics, return_type: return_type.clone(), body
             }; callable_impl
         } else { panic!("Tried to make a function from a non-function statement"); }
     }

@@ -5,6 +5,7 @@ mod interpreter;
 mod statements;
 mod environment;
 mod resolver;
+mod type_;
 
 use crate::scanner::*;
 use crate::parser::*;
